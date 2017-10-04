@@ -1,5 +1,6 @@
 use std::result;
 use std::io;
+use rand;
 
 #[derive(Eq, PartialEq, Ord, PartialOrd, Debug)]
 /// An element of the stack. May be either integer or boolean.
@@ -40,29 +41,106 @@ pub enum Op {
     Quit,
 }
 
-// TODO: Stack.
+pub struct Stack(Vec<Elt>); 
 
-// TODO: Result.
+pub type Result<T> = result::Result<T, Error>;
 
 impl Stack {
     /// Creates a new Stack
     pub fn new() -> Stack {
-        unimplemented!()
+        Stack(Vec::new())
     }
 
     /// Pushes a value onto the stack.
     pub fn push(&mut self, val: Elt) -> Result<()> {
-        unimplemented!()
+        self.0.push(val);
+        Ok(())
     }
 
     /// Tries to pop a value off of the stack.
     pub fn pop(&mut self) -> Result<Elt> {
-        unimplemented!()
+        let el = self.0.pop();
+        el.ok_or(Error::Underflow)   
     }
 
     /// Tries to evaluate an operator using values on the stack.
     pub fn eval(&mut self, op: Op) -> Result<()> {
-        unimplemented!()
+        match op {
+            Op::Add => {
+                // Add two numbers
+                let first = self.pop().unwrap();
+                let second = self.pop().unwrap();
+               match (first, second) {
+                   (Elt::Int(a), Elt::Int(b)) => {
+                       let result = a + b;
+                       self.push(Elt::Int(result))
+                   },
+                   _ => {
+                       Err(Error::Type)
+                   }
+               }  
+            },
+            Op::Eq => {
+                // Eq two numbers and push result
+                let first = self.pop().unwrap();
+                let second = self.pop().unwrap();
+               match (first, second) {
+                   (Elt::Int(a), Elt::Int(b)) => {
+                       let result = a == b;
+                       self.push(Elt::Bool(result))
+                   },
+                   (Elt::Bool(a), Elt::Bool(b)) => {
+                       let result = a == b;
+                       self.push(Elt::Bool(result))
+                   },
+                   (_, _) => {
+                       Err(Error::Type)
+                   }
+                }
+            }
+            Op::Neg => {
+                // Negate number and push back onto stack
+                let first = self.pop().unwrap();
+                match first {
+                    Elt::Int(a) => {
+                        self.push(Elt::Int(a * -1))
+                    },
+                    Elt::Bool(b) => {
+                        self.push(Elt::Bool(!b))
+                    }
+                }
+            },
+            Op::Rand => {
+                // Pop number and push and Random Number
+                let n = self.pop().unwrap();
+                if let Elt::Int(max) = n {
+                    use rand::distributions::{IndependentSample, Range};
+                    
+                    let between = Range::new(0, max); 
+                    let mut rng = rand::thread_rng();
+                    let x = between.ind_sample(&mut rng);
+                    self.push(Elt::Int(x))
+                } else {
+                    self.push(n);
+                    Err(Error::Type)
+                }
+            },
+            Op::Swap => {
+                // Swap 2 numbers
+                let first = self.pop();
+                let second = self.pop();
+                if first.is_ok() && second.is_ok() {
+                    self.push(first.unwrap());
+                    self.push(second.unwrap())
+                } else {
+                    Err(Error::Underflow)
+                }
+            },
+            Op::Quit => {
+                // Quit aplication
+                Err(Error::Quit)
+            },
+        }
     }
 }
 

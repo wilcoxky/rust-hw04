@@ -1,8 +1,10 @@
 pub mod rpn;
 
-use std::io::{self, Write};
-use rpn::{self, Stack};
+extern crate rand;
 
+use std::io::{self, Write};
+use rpn::{Stack};
+use std::str::FromStr;
 
 fn main() {
     if let Err(err) = read_eval_print_loop() {
@@ -20,24 +22,55 @@ pub fn read_eval_print_loop() -> rpn::Result<()> {
         print!("> ");
         try!(io::stdout().flush().map_err(rpn::Error::IO));
 
-        // TODO: Read from stdin into a String, and evaluate_line the result.
-        // * An io::Error should be converted into a rpn::Error::IO
-        unimplemented!();
+        let mut buffer = String::new();
+        try!(io::stdin().read_line(&mut buffer).map_err(rpn::Error::IO));
+        let result = evaluate_line(&mut stack, &buffer);
     }
 }
 
 fn evaluate_line(stack: &mut Stack, buf: &String) -> rpn::Result<()> {
     // Create an iterator over the tokens.
     let tokens = buf.split_whitespace();
-
-    // TODO: Evaluate all of the tokens on the line.
-    unimplemented!()
+    let mut final_result = Err(rpn::Error::Syntax);
+    for token in tokens {
+        final_result = match token {
+            "true" => {
+                stack.push(rpn::Elt::Bool(true))
+            },
+            "false" => {
+                stack.push(rpn::Elt::Bool(false))
+            },
+            "+" => {
+                stack.eval(rpn::Op::Add)
+            },
+            "~" => {
+                stack.eval(rpn::Op::Neg)
+            },
+            "<->" => {
+                stack.eval(rpn::Op::Swap)
+            },
+            "=" => {
+                stack.eval(rpn::Op::Eq)
+            },
+            "#" => {
+                stack.eval(rpn::Op::Rand)
+            },
+            "quit" => {
+                stack.eval(rpn::Op::Quit)
+            },
+            n => {
+                let number = try!(i32::from_str(n).map_err(|_| rpn::Error::Syntax));
+                stack.push(rpn::Elt::Int(number))
+            }
+        }
+    }
+    final_result
 }
 
 #[cfg(test)]
 mod tests {
     use rpn::{Stack, Error, Elt};
-    // use parser::evaluate_line;
+    use evaluate_line;
 
     #[test]
     fn test_evaluate_line_bool() {
