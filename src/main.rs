@@ -37,7 +37,7 @@ fn evaluate_line(stack: &mut Stack, buf: &String) -> rpn::Result<()> {
 #[cfg(test)]
 mod tests {
     use rpn::{Stack, Error, Elt};
-    use parser::evaluate_line;
+    // use parser::evaluate_line;
 
     #[test]
     fn test_evaluate_line_bool() {
